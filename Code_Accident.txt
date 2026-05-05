@@ -1,0 +1,198 @@
+#include <Wire.h>
+#include <Adafruit_SSD1306.h>
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+int const trigPin =7;
+int const echoPin = 6;
+int const Wensor1=2;
+int bWO = 0;
+#define x A1
+#define y A2
+#define z A3
+int xsample=0;
+int ysample=0;
+int zsample=0;
+#define samples 10
+#define minVal -50
+#define MaxVal 50
+void setup() {
+  Serial.begin(9600);
+  // put your setup code here, to run once:
+  pinMode(trigPin, OUTPUT); // trig pin will have pulses output
+  pinMode(echoPin, INPUT); // echo pin should be input to get pulse width
+  pinMode(Wensor1, INPUT); 
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT); 
+  pinMode(11, OUTPUT); 
+  pinMode(12, OUTPUT); 
+  pinMode(13, OUTPUT);
+  for(int i=0;i<samples;i++)
+  {
+    xsample+=analogRead(x);
+    ysample+=analogRead(y);
+    zsample+=analogRead(z);
+  }
+  xsample/=samples;
+  ysample/=samples;
+  zsample/=samples;
+  Serial.println(xsample);
+  Serial.println(ysample);
+  Serial.println(zsample);
+  delay(1000);
+
+  oled.clearDisplay(); // clear display
+  oled.setTextSize(2);          // text size
+  oled.setTextColor(WHITE);     // text color
+  oled.setCursor(0, 10);        // position to display
+  oled.println("Accident"); // text to display
+  oled.println("Detection"); // text to display
+  oled.display();               // show on OLED
+  delay(2000);
+}
+
+void loop() {
+int value1=analogRead(x);
+int value2=analogRead(y);
+int value3=analogRead(z);
+int xValue=xsample-value1;
+int yValue=ysample-value2;
+int zValue=zsample-value3;
+Serial.print("x=");
+Serial.println(xValue);
+Serial.print("y=");
+Serial.println(yValue);
+Serial.print("z=");
+Serial.println(zValue);
+  if(xValue < minVal || xValue > MaxVal  || yValue < minVal || yValue > MaxVal  || zValue < minVal || zValue > MaxVal)
+    {
+      digitalWrite(10, HIGH);
+      digitalWrite(11, HIGH);
+      Serial.println("Accident Detected");
+    oled.clearDisplay(); // clear display
+    oled.setTextSize(2);          // text size
+    oled.setTextColor(WHITE);     // text color
+    oled.setCursor(0, 10);        // position to display
+    oled.println("Accident"); // text to display
+    oled.println("Detection"); // text to display
+    oled.display();
+    }
+    else
+    {
+      oled.clearDisplay(); // clear display
+  oled.setTextSize(2);          // text size
+  oled.setTextColor(WHITE);     // text color
+  oled.setCursor(0, 10);        // position to display
+  oled.println("No"); // text to display
+  oled.println("Detected"); // text to display
+  oled.display();
+  digitalWrite(10, LOW);
+  digitalWrite(11, LOW);
+  if (bWO == HIGH)
+{
+     digitalWrite(10, LOW);
+     digitalWrite(11, LOW);
+  oled.clearDisplay(); // clear display
+  oled.setTextSize(2);          // text size
+  oled.setTextColor(WHITE);     // text color
+  oled.setCursor(0, 10);        // position to display
+  oled.println("No"); // text to display
+  oled.println("Detection"); // text to display
+  oled.display();
+}
+    }
+
+bWO = digitalRead(Wensor1);
+if (bWO == HIGH)
+{
+  digitalWrite(11, HIGH);
+  Serial.println("Vibration Detected");
+  oled.clearDisplay(); // clear display
+  oled.setTextSize(2);          // text size
+  oled.setTextColor(WHITE);     // text color
+  oled.setCursor(0, 10);        // position to display
+  oled.println("Vibration"); // text to display
+  oled.println("Detected"); // text to display
+  oled.display();
+  digitalWrite(10, HIGH);
+}
+
+
+ delay(2000);
+}
+
+#include <ESP8266WiFi.h>
+#include <SoftwareSerial.h>
+const int TED=D4; 
+float temp; //Stores temperature value
+String TEMPData; 
+int flag=0;
+int bTED = 0;
+// Your WiFi credentials.
+// Set password to "" for open networks.
+String postData="";
+const char *ssid = "IOT2";
+const char *pass = "password";
+//const char *ssid = "LIFE STAR NETWORK BSNL FTTH";
+//const char *pass = "gss295618";
+const char* host = "gladesoftwaresolution.in";
+int flag1=0;
+const int buttonPin = D1; 
+int buttonState = 0; 
+void setup() 
+{
+   
+ pinMode(TED,INPUT);
+ pinMode(buttonPin, INPUT);
+       Serial.begin(115200);
+       delay(10);
+       Serial.println("Connecting to ");
+       Serial.println(ssid);
+       WiFi.begin(ssid, pass);
+      while (WiFi.status() != WL_CONNECTED) 
+     {
+            delay(500);
+            Serial.print(".");
+     }
+      Serial.println("");
+      Serial.println("WiFi connected");
+}
+void loop()
+{
+  
+    bTED = digitalRead(TED);
+    if(bTED == HIGH){
+      TEMPData="HIGH";
+  }
+   if(bTED == LOW){
+      TEMPData="LOW";
+  }
+    buttonState = digitalRead(buttonPin);
+    
+  HTTPClient http,http1;
+ 
+  if (connect(host,80))
+  {
+    
+   
+    
+  if (buttonState == HIGH) 
+  {
+     postData = "?g=HIGH";
+    Serial.println(postData);
+    flag=1;
+    
+  }
+  if(flag==1)
+  {
+     http1.begin("http://gladecloud.in/23_frm_IOT_SMS.aspx");
+    int httpCode1 = http1.GET(); 
+     String payload1 = http1.getString();
+     http1.end();
+     Serial.println("SMS Send..");
+     delay(1000);
+     
+     flag=0;
+  }
+  Serial.println("Waiting...");
+  delay(2000);
+  }
+  }
